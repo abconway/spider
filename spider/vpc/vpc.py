@@ -1,21 +1,17 @@
-import time
-
 import boto3
 from botocore.exceptions import ClientError
 
 from .nat_gateway import wait_for_nat_gateway_to_delete
 
 
-def create_vpc(name, cidr_block, group='default', environment='development'):
+def create_vpc(name, cidr_block, environment='development'):
     ec2 = boto3.resource('ec2')
-    ec2_client = boto3.client('ec2')
 
     vpc = ec2.create_vpc(
         CidrBlock=cidr_block,
     )
 
-    vpc_waiter = ec2_client.get_waiter('vpc_available')
-    vpc_waiter.wait(VpcIds=[vpc.id])
+    vpc.wait_until_available()
 
     vpc.create_tags(
         Tags=[
@@ -26,10 +22,6 @@ def create_vpc(name, cidr_block, group='default', environment='development'):
             {
                 'Key': 'voxy:environment',
                 'Value': environment,
-            },
-            {
-                'Key': 'spider:group',
-                'Value': group,
             },
         ],
     )

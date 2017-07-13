@@ -8,8 +8,8 @@ from ..vpc import (
 )
 
 
-def create_dev_vpc(group='default'):
-    vpc = create_vpc(name='TestVPC', cidr_block='10.0.0.0/16', group=group)
+def create_dev_vpc():
+    vpc = create_vpc(name='TestVPC', cidr_block='10.0.0.0/16')
 
     public_subnet = create_subnet(
         name='TestPublicSubnet',
