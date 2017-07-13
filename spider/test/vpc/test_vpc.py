@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import boto3
 import moto
@@ -29,7 +30,10 @@ class TestVpc(unittest.TestCase):
         self.assertEqual(vpc.cidr_block, '10.0.0.0/16')
 
     @moto.mock_ec2
-    def test_delete_vpc(self):
+    @patch('spider.vpc.vpc.wait_for_nat_gateway_to_delete')
+    def test_delete_vpc(self, mock_wait_for_nat_gateway_to_delete):
+        mock_wait_for_nat_gateway_to_delete.return_value = None
+
         ec2_client = boto3.client('ec2')
 
         vpc = create_vpc(name='Test', cidr_block='10.0.0.0/16')
@@ -86,7 +90,7 @@ class TestVpc(unittest.TestCase):
         self.assertIn(vpc.id, found_vpc['VpcId'])
         self.assertEqual(vpc.cidr_block, '10.0.0.0/16')
 
-        delete_vpc(vpc_id=vpc.id, force=True, debug=True)
+        delete_vpc(vpc_id=vpc.id, force=True)
 
         vpcs = ec2_client.describe_vpcs(VpcIds=[vpc.id])['Vpcs']
 

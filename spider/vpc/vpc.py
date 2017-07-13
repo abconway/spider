@@ -1,8 +1,12 @@
+import time
+
 import boto3
 from botocore.exceptions import ClientError
 
+from .nat_gateway import wait_for_nat_gateway_to_delete
 
-def create_vpc(name, cidr_block, environment='development'):
+
+def create_vpc(name, cidr_block, group='default', environment='development'):
     ec2 = boto3.resource('ec2')
     ec2_client = boto3.client('ec2')
 
@@ -23,13 +27,17 @@ def create_vpc(name, cidr_block, environment='development'):
                 'Key': 'voxy:environment',
                 'Value': environment,
             },
+            {
+                'Key': 'spider:group',
+                'Value': group,
+            },
         ],
     )
 
     return vpc
 
 
-def delete_vpc(vpc_id, force=False, debug=False):
+def delete_vpc(vpc_id, force=False):
     ec2_client = boto3.client('ec2')
 
     try:
@@ -61,12 +69,7 @@ def delete_vpc(vpc_id, force=False, debug=False):
         for nat_gateway in nat_gateways:
             ec2_client.delete_nat_gateway(NatGatewayId=nat_gateway['NatGatewayId'])
 
-            if not debug:
-                nat_gateway_waiter = ec2_client.get_waiter('nat_gateway_available')
-                nat_gateway_waiter.wait(
-                    Filters=[{'Name': 'state', 'Values': ['deleted']}],
-                    NatGatewayIds=[nat_gateway['NatGatewayId']],
-                )
+            wait_for_nat_gateway_to_delete(vpc_id=vpc_id, nat_gateway_id=nat_gateway['NatGatewayId'])
 
             for nat_gateway_address in nat_gateway['NatGatewayAddresses']:
                 ec2_client.release_address(AllocationId=nat_gateway_address['AllocationId'])
